@@ -1,2 +1,12 @@
-# wifi_flex
-Extension of the uniflex wifi module
+UniFlex WiFI Flex Module
+============================
+
+Device Module for WiFi Flex
+
+## Installation:
+To install UniFlex framework with all available modules, please go through all steps in [manifest](https://github.com/uniflex/manifests) repository.
+
+## Acknowledgement
+
+The research leading to these results has received funding from the European
+Horizon 2020 Programme under grant agreement n645274 (WiSHFUL project).
