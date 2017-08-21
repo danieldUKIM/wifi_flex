@@ -39,13 +39,6 @@ class WiFiConfigureAPRsp(events.EventBase):
 		self.macaddr = macaddr
 		self.ap_config = ap_config
 
-#class WiFiAPConnectionRsp(events.EventBase):
-#	def __init__(self, macaddr, ap_config, stations):
-#		super().__init__()
-#		self.macaddr = macaddr
-#		self.ap_config = ap_config
-#		self.stations = stations
-
 class WiFiConfigureStation(events.EventBase):
 	def __init__(self, macaddr, ssid, ap, power, channel):
 		super().__init__()
