@@ -188,10 +188,13 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self.log.info("Started interface {} on device {}".format(self._maniface, self.phyName))
 				self._haiface = '/tmp/hostapd-' + self._maniface
 
-				cmd_str = "sudo ip addr flush dev " + self._maniface
-				self.run_command(cmd_str)
-				cmd_str = "sudo ip addr add " + self._ipaddr + " dev " + self._maniface
-				self.run_command(cmd_str)
+				try:
+					cmd_str = "sudo ip addr flush dev " + self._maniface
+					self.run_command(cmd_str)
+					cmd_str = "sudo ip addr add " + self._ipaddr + " dev " + self._maniface
+					self.run_command(cmd_str)
+				except Exception as e:
+					self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 
 				addr_split = self._ipaddr.split(".")
 				addr_base = addr_split[0] + "." + addr_split[1] + "." + addr_split[2]
@@ -224,18 +227,24 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 					dns_file = 'dnsmasq.conf'
 					with open(dns_file, 'w+') as x_file:
 						x_file.write(dns_str)
+					
+					try:
+						cmd_str = "sudo dnsmasq -x " + self._dpid + " -C " + dns_file
+						self.run_command(cmd_str)
+					except Exception as e:
+						self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 
-					cmd_str = "sudo dnsmasq -x " + self._dpid + " -C " + dns_file
-					self.run_command(cmd_str)
-
-					cmd_str = ("iptables --flush && "
-						"iptables --table nat --flush && "
-						"iptables --delete-chain && "
-						"iptables --table nat --delete-chain && "
-						"iptables --table nat --append POSTROUTING --out-interface {} -j MASQUERADE && "
-						"iptables --append FORWARD --in-interface {} -j ACCEPT && "
-						"sysctl -w net.ipv4.ip_forward=1").format(self._gwiface, self._maniface)
-					self.run_command(cmd_str)
+					try:
+						cmd_str = ("iptables --flush && "
+							"iptables --table nat --flush && "
+							"iptables --delete-chain && "
+							"iptables --table nat --delete-chain && "
+							"iptables --table nat --append POSTROUTING --out-interface {} -j MASQUERADE && "
+							"iptables --append FORWARD --in-interface {} -j ACCEPT && "
+							"sysctl -w net.ipv4.ip_forward=1").format(self._gwiface, self._maniface)
+						self.run_command(cmd_str)
+					except Exception as e:
+						self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 
 				#start hostapd
 				hapd_str = ("driver=nl80211\n"
@@ -267,12 +276,19 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				hapd_file = 'hostapd.conf'
 				with open(hapd_file, 'w+') as x_file:
 					x_file.write(hapd_str)
-		
-				cmd_str = "echo 3600 | sudo tee /proc/sys/net/ipv4/neigh/default/gc_stale_time"
-				self.run_command(cmd_str)
 
-				cmd_str = "sudo hostapd -B -P " + self._haiface + ".pid " + hapd_file
-				self.run_command(cmd_str)
+				try:
+					cmd_str = "echo 3600 | sudo tee /proc/sys/net/ipv4/neigh/default/gc_stale_time"
+					self.run_command(cmd_str)
+				except Exception as e:
+					self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
+
+				try:
+					cmd_str = "sudo hostapd -B -P " + self._haiface + ".pid " + hapd_file
+					self.run_command(cmd_str)
+				except Exception as e:
+					self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
+
 				self.log.info("Started hostapd daemon...")
 				self._wmode = 'AP'
 				self._timeInterval = 1
@@ -604,8 +620,11 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		self.log.info("Starting WiFi device...")
 		try:
 			super(WifiModuleFlex, self).my_start_function()
-			cmd_str = "sudo service network-manager stop"
-			self.run_command(cmd_str)
+			try:
+				cmd_str = "sudo service network-manager stop"
+				self.run_command(cmd_str)
+			except Exception as e:
+				self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 
 			self.set_all_ifaces_down()
 			ifaces = self.get_interfaces()
