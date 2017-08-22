@@ -112,7 +112,6 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 						stdarr = []
 						if ('a' in self._stds): stdarr.append('a')
 						if ('n' in self._stds): stdarr.append('n')
-						print (stdarr)
 						self._capabilities[chind]['stds'] = stdarr
 					#if self._csa: self._capabilities['csa'] = 1
 					#else: self._capabilities['csa'] = 0
@@ -631,6 +630,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 			iface = ifaces[0]
 			self._w0 = pyw.getcard(iface)
 			self._macad = pyw.macget(self._w0)
+			pyw.regset(self._country)
 			pyw.regset(self._country)
 			self.log.info("Regulatory domain set to {}".format(pyw.regget()))
 			self.get_capabilities()
