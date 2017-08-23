@@ -15,7 +15,7 @@ from pyric.utils.channels import ch2rf
 from uniflex.core.timer import TimerEventSender
 
 from .wifi_pkt_sniffer import PacketSnifferPyShark, WiFiRssiSink
-from .sensing_events import *
+from rem_events.sensing_events import *
 
 __author__ = "Daniel Denkovski"
 __copyright__ = "Copyright (c) 2017, Faculty of Electrical Engineering and Information Technologies, UKIM, Skopje, Macedonia"

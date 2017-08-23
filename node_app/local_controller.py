@@ -4,7 +4,7 @@ import time
 from random import randint
 from uniflex.core import modules
 from uniflex.core import events
-from uniflex_module_wifi_flex.sensing_events import *
+from rem_events.sensing_events import *
 
 __author__ = "Daniel Denkovski"
 __copyright__ = "Copyright (c) 2017, Faculty of Electrical Engineering and Information Technologies, UKIM, Skopje, Macedonia"
