@@ -1,1 +1,1 @@
-build-essential hostapd hostap-utils dnsmasq
+build-essential hostapd hostap-utils dnsmasq tshark rfkill

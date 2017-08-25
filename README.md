@@ -4,7 +4,8 @@ UniFlex WiFI Flex Module
 Device Module for WiFi Flex
 
 ## Installation:
-To install UniFlex framework with all available modules, please go through all steps in [manifest](https://github.com/uniflex/manifests) repository.
+Install requirements:
+sudo apt-get install wget git python python-virtualenv python-dev python3-dev python3-pip rfkill tshark hostapd hostap-utils dnsmasq
 
 ## Acknowledgement
 
