@@ -202,7 +202,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				if chint in self._ap_capabilities:
 					self._daemons.start_dnsmasq()
 					if config['ht_capab'] is None:
-						config['ht_capab'] = self._ap_capabilities[chint]['ht_capab']
+						config['ht_capab'] = self._ap_capabilities[chint]['ht-capab']
 					self._daemons.start_hostapd(config)
 
 					self._wmode = 'AP'
