@@ -195,9 +195,8 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self.set_channel(config['channel'], self._maniface, **kwargs)
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
-			time.sleep(0.1)
-			self._apconfig['channel'] = self.get_channel(self._maniface)
-			self._apconfig['power'] = self.get_tx_power(self._maniface)
+			self._apconfig['channel'] = config['channel']
+			self._apconfig['power'] = config['power']
 
 			if self.is_connected(self._maniface):
 				apconnEvent = WiFiConfigureAPRsp(self._macad, self._apconfig)
@@ -304,9 +303,8 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		if (self._wmode == 'station' and self._csa and config['ap'] == self._apconfig['ap']):
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
-			time.sleep(0.1)
-			self._apconfig['channel'] = self.get_channel(self._maniface)
-			self._apconfig['power'] = self.get_tx_power(self._maniface)
+			self._apconfig['channel'] = config['channel']
+			self._apconfig['power'] = config['power']
 
 			if self.is_connected(self._maniface):
 				connectionEvent = WiFiConfigureStationRsp(self._macad, config['ap'], self._apconfig)
@@ -404,10 +402,10 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 			elif (self._wmode in ['AP', 'station']):
 				if self.is_connected(self._maniface):
-					if not self._apconfig['channel']:
-						self._apconfig['channel'] = self.get_channel(self._maniface)
-					if not self._apconfig['power']:
-						self._apconfig['power'] = self.get_tx_power(self._maniface)
+					#if not self._apconfig['channel']:
+					self._apconfig['channel'] = self.get_channel(self._maniface)
+					#if not self._apconfig['power']:
+					self._apconfig['power'] = self.get_tx_power(self._maniface)
 					used_ch = self._apconfig['channel'] #self.get_channel(self._maniface)
 					duty_cycle = self.get_duty_cycle_old(self._maniface)
 					if duty_cycle and used_ch:
