@@ -195,6 +195,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self.set_channel(config['channel'], self._maniface, **kwargs)
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
+			time.sleep(0.1)
 			self._apconfig['channel'] = self.get_channel(self._maniface)
 			self._apconfig['power'] = self.get_tx_power(self._maniface)
 
@@ -303,6 +304,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		if (self._wmode == 'station' and self._csa and config['ap'] == self._apconfig['ap']):
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
+			time.sleep(0.1)
 			self._apconfig['channel'] = self.get_channel(self._maniface)
 			self._apconfig['power'] = self.get_tx_power(self._maniface)
 
