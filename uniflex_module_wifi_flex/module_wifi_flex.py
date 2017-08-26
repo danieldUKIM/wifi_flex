@@ -192,7 +192,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 			kwargs = {}
 			kwargs["control_socket_path"] = self._daemons.get_hostap_interface()
 			if config['channel']:
-				self.set_channel(config['channel'], self._maniface, kwargs)
+				self.set_channel(config['channel'], self._maniface, **kwargs)
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
 		else:
