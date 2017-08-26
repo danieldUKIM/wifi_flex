@@ -300,7 +300,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	def configure_managed(self, config):
 		self.log.info("Starting WiFi managed...")
-		if (self._wmode == 'station' and self._csa and config['ap'] = self._apconfig['ap']):
+		if (self._wmode == 'station' and self._csa and config['ap'] == self._apconfig['ap']):
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
 			self._apconfig['channel'] = self.get_channel(self._maniface)
