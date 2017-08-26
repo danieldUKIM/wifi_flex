@@ -193,8 +193,10 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 			kwargs["control_socket_path"] = self._daemons.get_hostap_interface()
 			if config['channel']:
 				self.set_channel(config['channel'], self._maniface, **kwargs)
+				self._apconfig['channel'] = config['channel']
 			if config['power']:
 				self.set_tx_power(int(config['power']), self._maniface)
+				self._apconfig['power'] = int(config['power']
 		else:
 			self.stop_mode()
 			if (self._maniface and 'AP' in pyw.devmodes(self._w0) and None not in [config['hw_mode'], config['channel'], config['ssid']]):
@@ -383,10 +385,10 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 			elif (self._wmode in ['AP', 'station']):
 				if self.is_connected(self._maniface):
-					if not self._apconfig['channel']:
-						self._apconfig['channel'] = self.get_channel(self._maniface)
-					if not self._apconfig['power']:
-						self._apconfig['power'] = self.get_tx_power(self._maniface)
+					#if not self._apconfig['channel']:
+					self._apconfig['channel'] = self.get_channel(self._maniface)
+					#if not self._apconfig['power']:
+					self._apconfig['power'] = self.get_tx_power(self._maniface)
 					used_ch = self._apconfig['channel'] #self.get_channel(self._maniface)
 					duty_cycle = self.get_duty_cycle_old(self._maniface)
 					if duty_cycle and used_ch:
