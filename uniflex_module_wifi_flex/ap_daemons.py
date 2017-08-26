@@ -20,6 +20,7 @@ class ap_daemons():
 		self.hostap_interface = None
 		self.dnsmasq_pid = None
 		self.hostapd_pid = None
+		self.dhclient_pid = None
 
 	def start_hostapd(self, config):
 		self.hostap_interface = '/tmp/hostapd-' + self.interface # needed to stop hostapd daemon if exists
@@ -51,7 +52,7 @@ class ap_daemons():
 			hapd_str += ("\nieee80211n=1\n"
 				"ht_capab={}\n").format(config['ht_capab'])
 
-		hapd_file = 'hostapd.conf'
+		hapd_file = "hostapd" + self.interface + ".conf"
 		with open(hapd_file, 'w+') as x_file:
 			x_file.write(hapd_str)
 
@@ -63,6 +64,8 @@ class ap_daemons():
 
 		try:
 			cmd_str = "sudo hostapd -B -P " + self.hostap_interface + ".pid " + hapd_file
+			self.run_command(cmd_str)
+			cmd_str = "sudo rm " + hapd_file
 			self.run_command(cmd_str)
 		except Exception as e:
 			self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
@@ -80,8 +83,6 @@ class ap_daemons():
 				if pid is not None:
 					cmd_str = "sudo kill -15 " + pid
 					self.run_command(cmd_str)
-				cmd_str = "sudo rm hostapd.conf"
-				self.run_command(cmd_str)
 			except Exception as e:
 				self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 				self.hostap_interface = None
@@ -133,15 +134,19 @@ class ap_daemons():
 		if gateway_interface is not None:
 			dns_str = ("no-resolv\n"
 				"interface={}\n"
+				"except-interface=lo\n"
+				"bind-interfaces\n"
 				"dhcp-range={}\n"
 				"server={}").format(self.interface, addr_range, self.dnsserver)
 
-			dns_file = 'dnsmasq.conf'
+			dns_file = "dnsmasq" + self.interface + ".conf"
 			with open(dns_file, 'w+') as x_file:
 				x_file.write(dns_str)
 					
 			try:
 				cmd_str = "sudo dnsmasq -x " + self.dnsmasq_pid + " -C " + dns_file
+				self.run_command(cmd_str)
+				cmd_str = "sudo rm " + dns_file
 				self.run_command(cmd_str)
 			except Exception as e:
 				self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
@@ -172,8 +177,6 @@ class ap_daemons():
 				if pid is not None:
 					cmd_str = "sudo kill -15 " + pid
 					self.run_command(cmd_str)
-				cmd_str = "sudo rm dnsmasq.conf"
-				self.run_command(cmd_str)
 			except Exception as e:
 				self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 				self.dnsmasq_pid = None
@@ -188,13 +191,33 @@ class ap_daemons():
 		else: return False
 
 	def dhclient_renew(self):
+		self.dhclient_pid = "/var/run/dhclient-" + self.interface + ".pid" # needed to stop dhclient daemon if exists
+		self.dhclient_stop()
+		self.dhclient_pid = "/var/run/dhclient-" + self.interface + ".pid" # reset since dhclient_stop sets it to None
 		try:
-			cmd_str = "sudo dhclient -r " + self.interface + " && sudo dhclient " + self.interface
+			cmd_str = "sudo dhclient " + self.interface + " -pf " + self.dhclient_pid + " " 
+			print(cmd_str)
 			self.run_command(cmd_str)
 		except Exception as e:
 			self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 			return False
 		self.log.info("dhclient renew successfull...")
+		return True
+
+	def dhclient_stop(self):
+		pid = None
+		if self.dhclient_pid is not None:
+			try:
+				with open(self.dhclient_pid, 'r') as f: pid = f.readline()
+				if pid is not None:
+					cmd_str = "sudo kill -15 " + pid
+					self.run_command(cmd_str)
+			except Exception as e:
+				self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
+				self.dhclient_pid = None
+				return False
+		self.dhclient_pid = None
+		self.log.info("Stopped dhclient daemon...")
 		return True
 
 	def stop_network_manager(self):

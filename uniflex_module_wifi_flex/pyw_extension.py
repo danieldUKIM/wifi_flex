@@ -56,7 +56,6 @@ def _bands_(bs):
 			'VHT': False,
 			'ht-capab': None,
 			'vht-capab': None,
-			'rfs': None,
 			'rf-data': None}
 
 		# now we delve into multiple levels of nesting
@@ -65,9 +64,9 @@ def _bands_(bs):
 			# that we are not currently using
 			if bidx == nl80211h.NL80211_BAND_ATTR_FREQS:
 				try:
-					bands[idx]['rfs'], bands[idx]['rf-data'] = _band_rfs_(battr)
+					bands[idx]['rf-data'] = _band_rfs_(battr)
 				except nl.error:
-					bands[idx]['rfs'], bands[idx]['rf-data'] = [], []
+					bands[idx]['rf-data'] = []
 			elif bidx == nl80211h.NL80211_BAND_ATTR_HT_CAPA:
 				htcapabstr = ''			
 				if (battr[0] & 1): htcapabstr += "[LDPC]"; #print("RX LDPC"); 
@@ -100,11 +99,12 @@ def _bands_(bs):
 			#	bands[idx]['VHT'] = True
 	return bands
 def _band_rfs_(rs):
-	rfs = []
 	rfds = []
 	for _, fattr in nl.nla_parse_nested(rs):
 		rfd = {
-			'max-tx': 0,        # Card's maximum tx-power on this RF
+			'channel': None,
+			'frequency': None,
+			'max-tx': None,        # Card's maximum tx-power on this RF
 			'enabled': True,    # w/ current reg. dom. RF is enabled
 			'20Mhz': True,      # w/ current reg. dom. 20MHz operation is allowed
 			'10Mhz': True,      # w/ current reg. dom. 10MHz operation is allowed
@@ -115,7 +115,10 @@ def _band_rfs_(rs):
 		for rfi, rfattr in nl.nla_parse_nested(fattr):
 			# rfi is the index into enum nl80211_frequency_attr
 			if rfi == nl80211h.NL80211_FREQUENCY_ATTR_FREQ:
-				rfs.append(struct.unpack_from('I', rfattr, 0)[0])
+				freq = struct.unpack_from('I', rfattr, 0)[0]
+				ch = rf2ch(freq)
+				rfd['channel'] = ch
+				rfd['frequency'] = freq
 			elif rfi == nl80211h.NL80211_FREQUENCY_ATTR_DISABLED:
 				rfd['enabled'] = False
 			elif rfi == nl80211h.NL80211_FREQUENCY_ATTR_MAX_TX_POWER: # in mBm
@@ -138,8 +141,9 @@ def _band_rfs_(rs):
 				rfd['no-IR'] = True
 			elif rfi == nl80211h.NL80211_FREQUENCY_ATTR_RADAR:
 				rfd['radar'] = True
-		rfds.append(rfd)
-	return rfs, rfds
+		if rfd['channel'] is not None: rfds.append(rfd)
+
+	return rfds
 
 def survey(card, nlsock=None):
 	if nlsock is None: return pyw._nlstub_(survey, card)

@@ -81,8 +81,8 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		for d in rfs:
 			if (d == '5GHz'):
 				self._csa = True
-			for (freq, chsettings) in zip(rfs[d]['rfs'], rfs[d]['rf-data']):
-				if chsettings['enabled']: self._monchannels.append(rf2ch(freq))
+			for chsettings in rfs[d]['rf-data']:
+				if chsettings['enabled']: self._monchannels.append(chsettings['channel'])
 
 	def get_ap_capabilities(self):
 		stds = pyw.devstds(self._w0)
@@ -92,9 +92,9 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		for d in rfs:
 			if (d == '5GHz'):
 				self._csa = True
-			for (freq, chsettings) in zip(rfs[d]['rfs'], rfs[d]['rf-data']):
+			for chsettings in rfs[d]['rf-data']:
 				if chsettings['enabled']:
-					chind = rf2ch(freq)
+					chind = chsettings['channel']
 					self._monchannels.append(chind)
 					if not chsettings['no-IR']:
 						self._ap_capabilities[chind] = {}
@@ -252,7 +252,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self.set_interface_up(self._moniface)
 			self.log.info("Started interface {} on device {}".format(self._moniface, self.phyName))
 
-			self.get_supported_monitor_channels()
+			#self.get_supported_monitor_channels() # already got monitor channels using self.get_ap_capabilities()
 			for chan in self._monchannels:
 				self._rssi_results[chan] = {}
 
@@ -330,6 +330,7 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	def stop_managed(self):
 		self.log.info("Stopped WiFi managed")
+		self._daemons.dhclient_stop()
 		self.set_all_ifaces_down()
 
 	def stop_mode(self):
@@ -344,6 +345,15 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	def get_macaddr(self):
 		return self._macad
+
+	def change_country(self, country):
+		self.log.info('Changing country to %s' % str(country))
+		try:
+			cmd_str = 'sudo iw reg set ' + country
+			self.run_command(cmd_str)
+		except Exception as e:
+			self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
+		return True
 
 	@modules.on_event(PeriodicEvaluationTimeEvent)
 	def periodic_evaluation(self, event):
@@ -525,8 +535,8 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 			iface = ifaces[0]
 			self._w0 = pyw.getcard(iface)
 			self._macad = pyw.macget(self._w0)
-			while (pyw.regget() != self._country):
-				pyw.regset(self._country)
+			pyw.regset(self._country)
+			self.change_country(self._country) #just in case
 			self.log.info("Regulatory domain set to {}".format(pyw.regget()))
 			self.get_ap_capabilities()
 			print(self._ap_capabilities)
