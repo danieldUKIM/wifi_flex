@@ -235,7 +235,7 @@ class ap_daemons():
 		self.dhclient_stop()
 		self.dhclient_pid = "/var/run/dhclient-" + self.interface + ".pid" # reset since dhclient_stop sets it to None
 		try:
-			cmd_str = "sudo dhclient " + self.interface + " -pf " + self.dhclient_pid + " " 
+			cmd_str = "sudo dhclient -r " + self.interface + " -pf " + self.dhclient_pid + " && sudo dhclient " + self.interface + " -pf " + self.dhclient_pid
 			print(cmd_str)
 			self.run_command(cmd_str)
 		except Exception as e:

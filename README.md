@@ -25,6 +25,9 @@ Running examples
 1. Local node:
 
         cd node_app/
+
+Change IP address of sub and pub to be the IP address of the broker 
+
         sudo uniflex-agent --config ./config_slave_1.yaml
 
 ## Acknowledgement
