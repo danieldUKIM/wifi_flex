@@ -1,9 +1,6 @@
 UniFlex WiFI Flex Module
 ============================
 
-User Installation (no Github rights needed)
-====================================
-
 Download from GitHub
 ====================================
 
@@ -16,26 +13,11 @@ Requirements installation
 
 	sudo xargs apt-get install -y < requirements.system
 
-
 Installation
 ============
 
-1. Create virtual environment:
-
-        virtualenv -p /usr/bin/python3 ./dev
-
-2. Activate virtual environment:
-
-        source ./dev/bin/activate
-
-3. Install all dependencies (if all needed):
-
-        pip3 install -U -r requirements.txt
-	python3 setup.py install
-
-4. Deactivate virtual environment (if you need to exit):
-
-        deactivate
+        pip3 install -r requirements.txt
+	sudo python3 setup.py install
 
 Running examples
 ================
@@ -43,7 +25,7 @@ Running examples
 1. Local node:
 
         cd node_app/
-        uniflex-agent --config ./config_slave_1.yaml
+        sudo uniflex-agent --config ./config_slave_1.yaml
 
 ## Acknowledgement
 The research leading to these results has received funding from the European
