@@ -9,8 +9,22 @@ __copyright__ = "Copyright (c) 2017, Faculty of Electrical Engineering and Infor
 __version__ = "0.1.0"
 __email__ = "{danield}@feit.ukim.edu.mk"
 
+'''
+ap_daemons class
+Controlling the daemon processes used for automation of (re)configuration and communication of the WiFi devices.
+'''
+
 class ap_daemons():
 	def __init__(self, interface, macaddr, ipaddr, dnsserver, country):
+		'''
+		Initialization of the ap_daemons module
+		Args:
+			interface: the used interface
+			macaddr: MAC address of the interface
+			ipaddr: IP address to assign to the interface
+			dnsserv: IP address of used DNS server
+			country: country code for regulation (e.g. DE)
+		'''
 		self.log = logging.getLogger('AP_daemons')
 		self.interface = interface
 		self.macaddr = macaddr
@@ -23,6 +37,14 @@ class ap_daemons():
 		self.dhclient_pid = None
 
 	def start_hostapd(self, config):
+		'''
+		Starts hostapd daemon based on configuration in the config dictionary
+		Args:
+			config['channel']: the channel to be used
+			config['ssid']: the SSID to be used
+			config['hw_mode']: the hw_mode to be used 
+			config['ht_capab']: the ht_capab to be used
+		'''
 		self.hostap_interface = '/tmp/hostapd-' + self.interface # needed to stop hostapd daemon if exists
 		self.stop_hostapd()
 		self.hostap_interface = '/tmp/hostapd-' + self.interface # reset since stop_hostapd sets it to None
@@ -76,6 +98,9 @@ class ap_daemons():
 		return True
 
 	def stop_hostapd(self):
+		'''
+		Stops hostapd daemon process.
+		'''
 		pid = None
 		if self.hostap_interface is not None:
 			try:
@@ -92,11 +117,17 @@ class ap_daemons():
 		return True
 
 	def hostapd_running(self):
+		'''
+		Checks if hostapd daemon is running.
+		'''
 		if self.hostap_interface is not None:
 			return True
 		else: return False
 
 	def start_dnsmasq(self):
+		'''
+		Starts dnsmasq daemon for the interface self.interface using the dnsserver self.dnsserver
+		'''
 		self.dnsmasq_pid = '/tmp/dnsmasq-' + self.interface + '.pid' # needed to stop dnsmasq daemon if exists
 		self.stop_dnsmasq()
 		self.dnsmasq_pid = '/tmp/dnsmasq-' + self.interface + '.pid' # reset since stop_dnsmasq sets it to None
@@ -170,6 +201,9 @@ class ap_daemons():
 		return True
 
 	def stop_dnsmasq(self):
+		'''
+		Stops dnsmasq daemon process.
+		'''
 		pid = None
 		if self.dnsmasq_pid is not None:
 			try:
@@ -186,11 +220,17 @@ class ap_daemons():
 		return True
 
 	def dnsmasq_running(self):
+		'''
+		Checks if dnsmasq is running.
+		'''
 		if self.dnsmasq_pid is not None:
 			return True
 		else: return False
 
 	def dhclient_renew(self):
+		'''
+		Starts a dhclient daemon on the interface self.interface.
+		'''
 		self.dhclient_pid = "/var/run/dhclient-" + self.interface + ".pid" # needed to stop dhclient daemon if exists
 		self.dhclient_stop()
 		self.dhclient_pid = "/var/run/dhclient-" + self.interface + ".pid" # reset since dhclient_stop sets it to None
@@ -205,6 +245,9 @@ class ap_daemons():
 		return True
 
 	def dhclient_stop(self):
+		'''
+		Stops the dhclient daemon on the interface self.interface.
+		'''
 		pid = None
 		if self.dhclient_pid is not None:
 			try:
@@ -221,6 +264,9 @@ class ap_daemons():
 		return True
 
 	def stop_network_manager(self):
+		'''
+		Stops the network-manager service if running.
+		'''
 		try:
 			cmd_str = "sudo service network-manager stop"
 			self.run_command(cmd_str)
@@ -231,9 +277,15 @@ class ap_daemons():
 		return True
 
 	def get_hostap_interface(self):
+		'''
+		Returns the hostap control interface.
+		'''
 		return self.hostap_interface
 
 	def run_command(self, command):
+		'''
+		Runs system commands.
+		'''
 		sp = subprocess.Popen(command, stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE, shell=True)
 		out, err = sp.communicate()

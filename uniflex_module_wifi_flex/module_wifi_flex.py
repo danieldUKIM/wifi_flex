@@ -25,8 +25,24 @@ __copyright__ = "Copyright (c) 2017, Faculty of Electrical Engineering and Infor
 __version__ = "0.1.0"
 __email__ = "{danield}@feit.ukim.edu.mk"
 
+'''
+WiFi Flex Module 
+An extension of the uniflex WiFi module with additional functionalities regarding the WISH-I-VE-A-REM extension
+Enables generic WiFi devices to work in monitor (sensing, sweeping mode), AP or station mode of operation
+Provides control of PHY layer parameters, reporting sensing data and communication performances
+'''
+
 class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 	def __init__(self, mode, ipaddr, dnsserv, country):
+		'''
+		Initialization of the WiFi flex module
+		Args:
+			All arguments read from yaml configuration file.
+			mode: start mode of operation (AP, station or monitor)
+			ipaddr: IP address of WiFi device in AP mode
+			dnsserv: IP address of used DNS server
+			country: country code for regulation (e.g. DE)
+		'''
 		super(WifiModuleFlex, self).__init__()
 		self.log = logging.getLogger('WifiModuleFlex')
 		self._startmode = mode
@@ -51,6 +67,11 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		self._daemons = None
 
 	def add_all_ifaces(self):
+		'''
+		Adds all required WiFi interfaces (monitor and managed) for the controlled WiFi physical device.
+			>> self._maniface is the managed interface
+			>> self._moniface is the monitor interface
+		'''
 		ifaces = self.get_interfaces()
 		for ifs in ifaces:
 			dinfo = pyw.devinfo(ifs)
@@ -70,11 +91,19 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self._maniface = pyw.devadd(self._w0, self._maniface, 'managed').dev
 
 	def set_all_ifaces_down(self):
+		'''
+		Turns down all active interfaces for the controlled WiFi physical device
+		'''
 		ifaces = self.get_interfaces()
 		for ifs in ifaces:
 			self.set_interface_down(ifs)
 
 	def get_supported_monitor_channels(self):
+		'''
+		Utilizes the Pyric extension module for collecting information regarding the channels that can be used for monitoring.
+		Available monitor channels are stored in the array self._monchannels.
+			>> example: self._monchannels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+		'''
 		stds = pyw.devstds(self._w0)
 		rfs = pywe_phyinfo(self._w0)['bands']
 		self._monchannels = []
@@ -85,6 +114,11 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				if chsettings['enabled']: self._monchannels.append(chsettings['channel'])
 
 	def get_ap_capabilities(self):
+		'''
+		Utilizes the Pyric extension module for collecting information regarding the access point capabilities.
+		Saves the AP capabilities in the self._ap_capabilities dictionary.
+			>> example: self._ap_capabilities = {1: {'max-tx': 20.0, 'stds': ['b','g','n'], 'ht-capab': '[HT20]'}}
+		'''
 		stds = pyw.devstds(self._w0)
 		rfs = pywe_phyinfo(self._w0)['bands']
 		self._ap_capabilities = {}
@@ -119,6 +153,14 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		return self._ap_capabilities
 
 	def get_duty_cycle(self, iface):
+		'''
+		Utilizes the Pyric extension module for collecting the duty cycle values for a given channel at a specific interface. 
+		Comment: Currently not used.
+		Args:
+			iface: the interface to use
+		Returns:
+			duty cycle value (channel busy time/channel active time)
+		'''
 		#self.log.info("WIFI Module Flex get duty cycle: %s" % str(iface))
 		res = None
 		try:
@@ -130,6 +172,13 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		return res
 
 	def get_duty_cycle_old(self, iface):
+		'''
+		Utilizes the "iw survey dump" command for collecting the duty cycle values for a given channel from a specified interface.
+		Args:
+			iface: the interface to use
+		Returns:
+			duty cycle value (channel busy time/channel active time)
+		'''
 		#self.log.info("WIFI Module Flex get duty cycle: %s" % str(iface))
 		res = None
 		try:
@@ -164,6 +213,15 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		return res
 
 	def process_rssi_data(self, ta, rssi, chnel):
+		'''
+		Implements a max hold algorithm for the RSSI gathering process.
+		Stores the max hold values in the dictionary self._rssi_results
+			>> example: self._rssi_results[1]['00:00:00:00:00:00'] = -45
+		Args:
+			ta: transmitting MAC address
+			rssi: RSSI value sensed from the transmiter
+			chnel: channel the packet was received on
+		'''
 		self.log.debug("RSSI sample: TA: {}, value: {}, channel: {}".format(ta, rssi, chnel))
 		if chnel in self._rssi_results: 
 			if ta in self._rssi_results[chnel]:
@@ -173,6 +231,9 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self._rssi_results[chnel][ta] = rssi
 
 	def rssi_service_start(self):
+		'''
+		Starts the RSSI sensing process on a monitor interface (self._moniface) using the PyShark module
+		'''
 		self._rssiServiceRunning = True
 		iface = self._moniface
 
@@ -184,9 +245,21 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		self._packetSniffer.add_sink(self.rssiSink)
 
 	def rssi_service_stop(self):
+		'''
+		Stops the RSSI sensing process
+		'''
 		self._rssiServiceRunning = False
 
 	def configure_ap(self, config):
+		'''
+		Utilizes the hostapd daemon and Pyric extension to configure the WiFi device in access point mode of operation. 
+		I also activates a dnsmasq daemon to configure a simple DNS and DHCP server.
+		If Channel Switch Announcement is supported hostap_cli is used to change a configuration of an active AP.
+		Sends a WiFiConfigureAPRsp event at configuration success.
+		Args:
+			config dictionary containing keys 'channel', 'power', 'ssid', 'ht_capab', 'hw_mode' 
+			>> example config = {'channel': 1, 'power': 20, 'ssid': 'SMARTAP', 'ht_capab': '[HT20]', 'hw_mode': 'g'}
+		'''
 		self.log.info("Starting WiFi AP...")
 		if (self._wmode == 'AP' and self._csa):
 			kwargs = {}
@@ -237,22 +310,21 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				self.log.error("Interface {} not found".format(self._maniface))
 				raise exceptions.UniFlexException(msg='AP interface missing')
 
-		'''
-		Set hostapd configuration, provide functionality
-		to setting Access Point station
-		Start hostapd, provide functionality to run Access Point
-		'''
-
 	def stop_ap(self):
+		'''
+		Stops the access point hostapd and dnsmasq daemon services and turns down the all interfaces
+		'''
 		self.log.info("Stop WiFi AP")
-		'''
-		Stop hostapd and dnsmasq
-		'''
 		self._daemons.stop_hostapd()
 		self._daemons.stop_dnsmasq()
 		self.set_all_ifaces_down()
 
 	def configure_monitor(self):
+		'''
+		Configures the WiFi device in monitor mode of operation (sweeping through available WiFi channels).
+		Starts a timer event to report RSSI and duty cycle values from monitored channels.
+		Sends a WiFiConfigureMonitorRsp event at configuration sucess.
+		'''
 		self.log.info("Starting WiFi monitor...")
 		self.stop_mode()
 		if self._moniface:
@@ -277,12 +349,24 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 			raise exceptions.UniFlexException(msg='Monitor interface failed')
 
 	def stop_monitor(self):
+		'''
+		Stops the monitor mode of operation and turns down all interfaces.
+		Turns down the rssi service as well, and clears the self._rssi_results dictionary.
+		'''
 		self.log.info("Stopped WiFi monitor")
 		self.rssi_service_stop()
 		self._rssi_results = {}
 		self.set_all_ifaces_down()
 
 	def connect_to_network(self, iface, ssid, bssid = None, chnel = None):
+		'''
+		Triggers the WiFi device to connect to a given access point based on the ssid, bssid and channel of interest.
+		Args:
+			iface: the interface to use
+			ssid: ssid to connect to
+			bssid: MAC address of the access point we want to connect to
+			chnel: where to search the active access point (to speed up the connection time)
+		'''
 		self.log.info('Connecting via to AP with SSID with mac and channel: %s->%s, %s, %s' % (str(iface), str(ssid), str(bssid), str(chnel)))
 		cmd_str = 'sudo iwconfig ' + iface + ' essid ' + str(ssid)
 
@@ -299,6 +383,13 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		return True
 
 	def configure_managed(self, config):
+		'''
+		Triggers the WiFi device to (re)configure its communication parameters and connect to a given access point.
+		Starts the dhclient daemon on the managed interface. Sends a WiFiConfigureStationRsp event at connection success.
+		Args:
+			config dictionary containing keys 'channel', 'power', 'ssid', 'ap' 
+			>> example config = {'channel': 1, 'power': 20, 'ssid': 'SMARTAP', 'ap': '00:00:00:00:00:00'}
+		'''
 		self.log.info("Starting WiFi managed...")
 		if (self._wmode == 'station' and self._csa and config['ap'] == self._apconfig['ap']):
 			if config['power']:
@@ -348,11 +439,18 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				raise exceptions.UniFlexException(msg='Managed interface failed')
 
 	def stop_managed(self):
+		'''
+		Stops the operation of the WiFi device when in station mode and turns down the managed interface. 
+		Stops the dhclient daemon.
+		'''
 		self.log.info("Stopped WiFi managed")
 		self._daemons.dhclient_stop()
 		self.set_all_ifaces_down()
 
 	def stop_mode(self):
+		'''
+		Stops the operation of the WiFi device irrespective of the mode of operation.
+		'''
 		if (self._wmode == 'monitor'):
 			self.stop_monitor()
 		elif (self._wmode == 'AP'):
@@ -363,9 +461,15 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 		self._apconfig = {}
 
 	def get_macaddr(self):
+		'''
+		Gets the MAC address of the WiFi physical device.
+		'''
 		return self._macad
 
 	def change_country(self, country):
+		'''
+		Changes regulatory domain based on the country argument (e.g. DE)
+		'''
 		self.log.info('Changing country to %s' % str(country))
 		try:
 			cmd_str = 'sudo iw reg set ' + country
@@ -376,6 +480,12 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_event(PeriodicEvaluationTimeEvent)
 	def periodic_evaluation(self, event):
+		'''
+		Periodically reports information to the node controller triggered by the PeriodicEvaluationTimeEvent. 
+		The function checks the device mode and performs the actions accordingly. 
+		If the WiFi device is configured in monitor mode, it sweeps channels and reports the RSSI and duty cycle measurements. 
+		If the WiFi device is configured as an access point or station it additionally reports the link and AP statistics. 
+		'''
 		node = self.localNode
 		if (node.uuid == event.srcNode.uuid):
 			if (self._wmode == 'monitor'):
@@ -514,6 +624,12 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 				else: self.configure_monitor()
 
 	def get_ht40allow_map(self):
+		'''
+		Returns the available HT40 modes of operation for each channel, regarding the extension channel possibilities. 
+		E.g. on the left (i.e. [HT40-]) and/or right (i.e. [HT40+])
+		Returns:
+			ht40map: dictionary, e.g. ht40map = {1: '[HT40+]', 5: '[HT40-][HT40+]'}
+		'''
 		self.log.info("Get HT40 allow Map")
 		ht40map = None
 		try:
@@ -546,6 +662,10 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_start()
 	def my_start_function(self):
+		'''
+		Starts the WiFi physical device in the given mode of operation that was selected in the configuration yaml file.
+		Gets mac address, sets regulatory domain, gets AP capabilities and supported monitor channels, adds interfaces. 
+		'''
 		self.log.info("Starting WiFi device...")
 		try:
 			super(WifiModuleFlex, self).my_start_function()
@@ -594,12 +714,18 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_exit()
 	def my_stop_function(self):
+		'''
+		Stops the WiFi device. 
+		'''
 		self.log.info("Stop WiFi Flex device")
 		self.stop_mode()
 		if self.timer is not None: self.timer.cancel()
 
 	#@modules.on_event(WiFiRssiSampleEvent)
 	def serve_rssi_sample_event(self, event):
+		'''
+		Handles WiFiRssiSampleEvent. For debuging purposes only.
+		'''
 		devName = None
 		if event.device:
 			devName = event.device.name
@@ -607,6 +733,9 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	#@modules.on_event(WiFiDutyCycleSampleEvent)
 	def serve_duty_cycle_sample_event(self, event):
+		'''
+		Handles WiFiDutyCycleSampleEvent. For debuging purposes only.
+		'''
 		devName = None
 		if event.device:
 			devName = event.device.name
@@ -614,6 +743,9 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_event(WiFiConfigureAP)
 	def serve_configure_ap(self, event):
+		'''
+		Handles event for WiFi device reconfiguration in access point mode.
+		'''
 		if (self._macad == event.macaddr):
 			config = {}
 			config['ssid'] = event.ssid
@@ -625,6 +757,9 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_event(WiFiConfigureStation)
 	def serve_configure_station(self, event):
+		'''
+		Handles event for WiFi device reconfiguration in station mode.
+		'''
 		if (self._macad == event.macaddr):
 			config = {}
 			config['ssid'] = event.ssid
@@ -635,16 +770,25 @@ class WifiModuleFlex(uniflex_module_wifi.WifiModule):
 
 	@modules.on_event(WiFiConfigureMonitor)
 	def serve_configure_monitor(self, event):
+		'''
+		Handles event for device (re)configuration in monitor mode (sweeping sensing mode of operation).
+		'''
 		if (self._macad == event.macaddr):
 			self.configure_monitor()
 
 	@modules.on_event(WiFiStopAll)
 	def serve_stop_all(self, event):
+		'''
+		Handles event to stop any operation of the WiFi device.
+		'''
 		if (self._macad == event.macaddr):
 			self.stop_mode()
 
 	@modules.on_event(WiFiGetCapabilities)
 	def serve_get_capabilities(self, event):
+		'''
+		Pull request for WiFi device capabilities reporting.
+		'''
 		node = self.localNode
 		if (node.uuid == event.receiverUuid):
 			try:

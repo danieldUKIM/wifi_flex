@@ -18,7 +18,15 @@ __copyright__ = "Copyright (c) 2017, Faculty of Electrical Engineering and Infor
 __version__ = "0.1.0"
 __email__ = "{danield}@feit.ukim.edu.mk"
 
+'''
+Extension of the Pyric module to gather additional device capabilities information.
+'''
+
 def phyinfo(card, nlsock=None):
+	'''
+	Gets phyinfo on the WiFi device including the allowed channels for Initiated Radiation (AP mode).
+	Returns ht_capabilities as well based on netlink messages exchange and parsing. 
+	'''
 	if nlsock is None: return pyw._nlstub_(phyinfo, card)
 
 	# iw sends @NL80211_ATTR_SPLIT_WIPHY_DUMP, we don't & get full return at once
@@ -146,6 +154,9 @@ def _band_rfs_(rs):
 	return rfds
 
 def survey(card, nlsock=None):
+	'''
+	Returns survey data to calculate duty cycle at given channel. 
+	'''
 	if nlsock is None: return pyw._nlstub_(survey, card)
 
 	# iw sends @NL80211_ATTR_SURVEY_INFO
